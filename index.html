@@ -1,1 +1,70 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Foundry Chat</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Arial;margin:24px;max-width:900px}
+    #log{border:1px solid #ddd;border-radius:12px;padding:12px;min-height:260px;white-space:pre-wrap}
+    .row{display:flex;gap:8px;margin-top:12px}
+    input{flex:1;padding:10px;border:1px solid #ddd;border-radius:10px}
+    button{padding:10px 14px;border:1px solid #ddd;border-radius:10px;cursor:pointer}
+    .meta{color:#666;font-size:12px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <h2>Foundry Chat</h2>
+  <div id="log"></div>
+
+  <div class="row">
+    <input id="msg" placeholder="Deine Frage…"/>
+    <button id="send">Senden</button>
+  </div>
+
+  <div class="meta" id="meta"></div>
+
+<script>
+  const FUNCTION_URL = "<FUNCTION_URL>"; // z.B. https://...azurewebsites.net/api/chat?code=...
+
+  let threadId = null;
+  const log = document.getElementById("log");
+  const meta = document.getElementById("meta");
+  const msg = document.getElementById("msg");
+  const send = document.getElementById("send");
+
+  function add(who, text){
+    log.textContent += `${who}: ${text}\n\n`;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function chat(){
+    const text = msg.value.trim();
+    if(!text) return;
+    msg.value = "";
+    add("Du", text);
+    meta.textContent = "Sending…";
+
+    const res = await fetch(FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ message: text, threadId })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      meta.textContent = "Error";
+      add("Error", data.error || "unknown error");
+      return;
+    }
+    threadId = data.threadId;
+    meta.textContent = `threadId: ${threadId}`;
+    add("Assistant", data.text || "(no text)");
+  }
+
+  send.onclick = chat;
+  msg.addEventListener("keydown", (e) => { if(e.key === "Enter") chat(); });
+</script>
+</body>
+</html>
 
